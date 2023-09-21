@@ -1,13 +1,16 @@
-import base64
-import io
-from pydub import AudioSegment
-import random
-import subprocess
-import requests
-def speak(text):
-    url = "https://audio.api.speechify.dev/generateAudioFiles"
+import base64  # Importing the base64 library for encoding/decoding operations
+import io  # Importing the io library for handling stream operations
+from pydub import AudioSegment  # Importing AudioSegment from pydub for audio processing
+import random  # Importing the random library for generating random numbers
+import subprocess  # Importing the subprocess library for running new applications/processes
+import requests  # Importing the requests library for making HTTP requests
+import os  # Importing the os library for handling OS operations
+def speak(text):  # Defining the speak function that takes text as input
+    url = "https://audio.api.speechify.dev/generateAudioFiles"  # URL of the API that generates audio files
 
+    # Preparing the payload for the POST request. The text to be converted to speech is inserted into the payload.
     payload = '{"audioFormat":"mp3","paragraphChunks":[$~],"voiceParams":{"name":"Snoop","engine":"resemble","languageCode":"en-US"}}'.replace("$~", f'"{text}"')
+    # Setting up the headers for the POST request
     headers = {
     'authority': 'audio.api.speechify.dev',
     'accept': '*/*',
@@ -27,17 +30,26 @@ def speak(text):
     'x-speechify-client-version': '0.1.295'
     }
 
+    # Making the POST request to the API and storing the response
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    # Replace this with your base64-encoded audio string
+    # Extracting the base64-encoded audio string from the response
     base64_audio = response.json()['audioStream']
 
+    # Decoding the base64 audio string to get the audio data
     audio_data = base64.b64decode(base64_audio)
 
+    # Creating an AudioSegment object from the audio data
     audio = AudioSegment.from_file(io.BytesIO(audio_data))
-
-    temp_wav_file = f"./spoken_audios/temp_audio_{random.randint(1,1000000000)}.wav"
-    audio.export(temp_wav_file, format="wav")
-    print(text)
-    subprocess.call(["ffplay", "-nodisp", "-autoexit", "-loglevel", "error", "-hide_banner", temp_wav_file], shell=True)
+    # Check if the 'spoken_audios' directory exists, if not, create it
+    if not os.path.exists('spoken_audios'):
+        os.makedirs('spoken_audios')
     
+    # Creating a temporary wav file to store the audio
+    temp_wav_file = f"./spoken_audios/temp_audio_{random.randint(1,1000000000)}.wav"
+    # Exporting the audio to the wav file
+    audio.export(temp_wav_file, format="wav")
+    # Printing the text
+    print(text)
+    # Playing the audio file using ffplay
+    subprocess.call(["ffplay", "-nodisp", "-autoexit", "-loglevel", "error", "-hide_banner", temp_wav_file], shell=True)
